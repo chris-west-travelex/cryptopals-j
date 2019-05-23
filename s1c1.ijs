@@ -30,6 +30,8 @@ NB. b64 _ encodes an array of decimals into a base64 string.
     indices =. sz {. (, @: ((c1 , c2)"1 @: fitted @: nibs))
 b64 =: (lookup @: (indices, pad)) f.
 
+
+NB. ---- TESTS ----
 assert (b64 h2d '49276d206b696c6c696e6720796f757220627261696e206c696b65206120706f69736f6e6f7573206d757368726f6f6d') = 'SSdtIGtpbGxpbmcgeW91ciBicmFpbiBsaWtlIGEgcG9pc29ub3VzIG11c2hyb29t'
 assert (b64 h2d '4927') = 'SSc='
 assert (b64 h2d '49')   = 'SZ=='
