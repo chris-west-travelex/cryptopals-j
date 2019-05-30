@@ -6,38 +6,6 @@ rotl8 =: (255) 17 b. 33 b. + ] 33 b.~ 8 -~ [
 NB. affine transformation
 affine =: 13 : 'x xor (1 rotl8 x) xor (2 rotl8 x) xor (3 rotl8 x) xor (4 rotl8 x) xor 16b63'
 
-NB. generate Rijndael S-Box
-matlabsbox =. 3 : 0
-   p =. 1
-   q =. 1
-   out =. 99, 255 # 0
-
-   whilst. p > 1 do.
-       NB. p = p ^ (p << 1) ^ (p & 0x80 ? 0x1B : 0);
-       p =. 255 band p xor (1 bshift p) xor (((p band 16b80) > 0) { 0 16b1b)
-
-       NB. q ^= q << 1;
-       NB. q ^= q << 2;
-       NB. q ^= q << 4;
-       NB. q ^= q & 0x80 ? 0x09 : 0;
-       q =. q xor (1 bshift q)
-       q =. q xor (2 bshift q)
-       q =. q xor (4 bshift q)
-       q =. 255 band q xor ((q band 16b80) > 0) { 0 9
-
-       NB. uint8_t xformed = q ^ ROTL8(q, 1) ^ ROTL8(q, 2) ^ ROTL8(q, 3) ^ ROTL8(q, 4);
-       NB.  xformed ^ 0x63;
-       out =. (affine q) p} out
-   end.
-   out
-)
-NB. SBOX =: sboxfn ''
-
-NB. 3 pm^:(i.15) 1
-NB. 3x => 1  3  5  f 11 33 55 ff 1a 2e 72 96 a1 f8 13 ..
-NB. 16bf6 pm^:(i.15) 1
-NB. 3% => 1 f6 52 c7 b4 6c 24 1c fd a2 97 84 7c dd 4b ..
-
 NB. function ab = poly_mult (a, b, mod_pol)
 NB.  ab = 0;
 NB.  for i_bit = 1 : 8
@@ -66,6 +34,10 @@ NB. mod_pol = 283 (16b11b)
 pm =: (255 & (17 b.) @: pm16)"0 0 f.
 
 NB. Rijndael substitution box
+NB. 3 pm^:(i.15) 1
+NB. 3x => 1  3  5  f 11 33 55 ff 1a 2e 72 96 a1 f8 13 ..
+NB. 16bf6 pm^:(i.15) 1
+NB. 3% => 1 f6 52 c7 b4 6c 24 1c fd a2 97 84 7c dd 4b ..
 SBOX =: 99, (affine 246 pm^:(i.255) 1) /: (3 pm^:(i.255) 1)
 
 NB. Round constant matrix
@@ -108,9 +80,37 @@ NB. x aes128 y -- encrypt 16 bytes of x with 16 byte key y
     NB. use round/ to process first 9 roundkeys; finalround for 10th,
     NB. then xor last one
     cipher =. 13 : ', |: (10 { y) 22 b. (round/ (|. (initstate x), (i.9) { y)) finalround (9 { y)'
-aes128 =: cipher ksched
+aes128 =: (cipher ksched) f.
 
 
+
+NB. ---- TEST HELPERS ----
+NB. generate Rijndael S-Box using code from the matlab paper
+matlabsbox =. 3 : 0
+   p =. 1
+   q =. 1
+   out =. 99, 255 # 0
+
+   whilst. p > 1 do.
+       NB. p = p ^ (p << 1) ^ (p & 0x80 ? 0x1B : 0);
+       p =. 255 band p xor (1 bshift p) xor (((p band 16b80) > 0) { 0 16b1b)
+
+       NB. q ^= q << 1;
+       NB. q ^= q << 2;
+       NB. q ^= q << 4;
+       NB. q ^= q & 0x80 ? 0x09 : 0;
+       q =. q xor (1 bshift q)
+       q =. q xor (2 bshift q)
+       q =. q xor (4 bshift q)
+       q =. 255 band q xor ((q band 16b80) > 0) { 0 9
+
+       NB. uint8_t xformed = q ^ ROTL8(q, 1) ^ ROTL8(q, 2) ^ ROTL8(q, 3) ^ ROTL8(q, 4);
+       NB.  xformed ^ 0x63;
+       out =. (affine q) p} out
+   end.
+   out
+)
+NB. SBOX =: sboxfn ''
 
 NB. ---- TESTS ----
 assert (5 rotl8 255) = 255
