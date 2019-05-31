@@ -1,7 +1,7 @@
-load 's1c1.ijs'
+load 'utils.ijs'
 
 NB. XOR a matched stream of bytes
-xor =: 22 b.
+xor =. 22 b.
 
 
 NB. ---- TESTS ----

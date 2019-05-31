@@ -1,4 +1,4 @@
-load 's1c2.ijs'
+load 'utils.ijs'
 
 NB. guess the value of the single char xor cipher for given data
     FREQT =. ' etaoinsrhdlucmfywgpb,.vkxqjz'
