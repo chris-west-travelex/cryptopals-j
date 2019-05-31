@@ -1,10 +1,10 @@
 load 's1c2.ijs'
 
 NB. 8-bit <<<
-rotl8 =: (255) 17 b. 33 b. + ] 33 b.~ 8 -~ [
+rotl8 =. (255) 17 b. 33 b. + ] 33 b.~ 8 -~ [
 
 NB. affine transformation
-affine =: 13 : 'x xor (1 rotl8 x) xor (2 rotl8 x) xor (3 rotl8 x) xor (4 rotl8 x) xor 16b63'
+affine =. 13 : 'x xor (1 rotl8 x) xor (2 rotl8 x) xor (3 rotl8 x) xor (4 rotl8 x) xor 16b63'
 
 NB. function ab = poly_mult (a, b, mod_pol)
 NB.  ab = 0;
@@ -38,13 +38,14 @@ NB. 3 pm^:(i.15) 1
 NB. 3x => 1  3  5  f 11 33 55 ff 1a 2e 72 96 a1 f8 13 ..
 NB. 16bf6 pm^:(i.15) 1
 NB. 3% => 1 f6 52 c7 b4 6c 24 1c fd a2 97 84 7c dd 4b ..
-SBOX =: 99, (affine 246 pm^:(i.255) 1) /: (3 pm^:(i.255) 1)
+SBOX =. 99, (affine 246 pm^:(i.255) 1) /: (3 pm^:(i.255) 1)
+INVSBOX =. SBOX i. i.256
 
 NB. Round constant matrix
-RCON =: ,. 4 ({."0) 10 1 $ 2 pm^:(i. 10) 1
+RCON =. ,. 4 ({."0) 10 1 $ 2 pm^:(i. 10) 1
 
 NB. Left-rotate 4 bytes
-rotw =: (/:"1) & 3 0 1 2
+rotw =. (/:"1) & 3 0 1 2
 
 NB. Generate key schedule (AES 128)
     NB. every 4th row
@@ -56,32 +57,39 @@ NB. Generate key schedule (AES 128)
     NB. get the final set of rows
     rs =. {: @: h @: (4 4 & $)
     NB. finally, break into groups of four and pivot col-wise
-ksched =: (13 : '(|:"2) 11 4 $ rs x') f.
+ksched =. (13 : '(|:"2) 11 4 $ rs x') f.
 
 NB. Mix columns
-POLYM =: 4 4 $ 2 3 1 1 1 2 3 1 1 1 2 3 3 1 1 2
+POLYM =. 4 4 $ 2 3 1 1 1 2 3 1 1 1 2 3 3 1 1 2
+INVPOLYM =. 4 4 $ 14 11 13 9 9 14 11 13 13 9 14 11 11 13 9 14
 
 NB. this uses i.16 to drive row and col selection in x and y; then
 NB. pms each row/col quad, and xors the result
-mixcols =: 13 : '4 4 $ (22 b.)/"1 1 ((_2 (33 b.) i.16) { x) pm ((3 (17 b.) i.16) { y)'
+mixcols =. 13 : '4 4 $ (22 b.)/"1 1 ((_2 (33 b.) i.16) { x) pm ((3 (17 b.) i.16) { y)'
 
 NB. Shift rows
-shiftrows =: (i. 4) & (|."0 1)
+shiftrows =. (i. 4) & (|."0 1)
+invshiftrows =. ((i._4) - 3) & (|."0 1)
+
+NB. initial state (from plain/cipher text)
+initstate =. |: @: (4 4 & $)
 
 NB. x aes128 y -- encrypt 16 bytes of x with 16 byte key y
-    NB. initial state (from x)
-    initstate =. |: @: (4 4 & $)
-
     NB. round of: xor key schedule, sub bytes, shift rows, mix cols
     round =. POLYM mixcols [: |: @: shiftrows SBOX {~ [ 22 b. ]
     NB. final round: xor key schedule, sub bytes, shift rows
     finalround =. [: shiftrows SBOX {~ [ 22 b. ]
-
     NB. use round/ to process first 9 roundkeys; finalround for 10th,
     NB. then xor last one
     cipher =. 13 : ', |: (10 { y) 22 b. (round/ (|. (initstate x), (i.9) { y)) finalround (9 { y)'
 aes128 =: (cipher ksched) f.
 
+NB. x aes128d y -- decrypt 16 bytes of x with 16 byte key y
+    NB. round of: shift rows, sub bytes, xor key sched, mix cols
+    invround =. INVPOLYM & mixcols @: |: @: (22 b.)  INVSBOX {~ invshiftrows
+    NB. final round omits mixcols
+    decipher =. 13 : ', |: (0{y) xor INVSBOX {~ invshiftrows invround/(((1+i.9){y), ((10{y) 22 b. initstate x))'
+aes128d =: (decipher ksched) f.
 
 
 NB. ---- TEST HELPERS ----
@@ -125,6 +133,8 @@ assert (affine 16bf6) = 16b7b
 assert (0 { SBOX) = 16b63
 assert (1 { SBOX) = 16b7c
 assert (16b99 { SBOX) = 16bee
+assert (0 { INVSBOX) = 16b52
+assert (1 { INVSBOX) = 16b09
 assert (matlabsbox '') = SBOX
 
 assert (8 { RCON) = 27 0 0 0
@@ -144,9 +154,11 @@ assert (2 { c) = h2d '64bc3bf9'
 assert (3 { c) = h2d '1592291a'
 
 assert (, shiftrows 4 4 $ i.16) = 0 1 2 3 5 6 7 4 10 11 8 9 15 12 13 14
+assert (, invshiftrows 4 4 $ i.16) = 0 1 2 3 7 4 5 6 10 11 8 9 13 14 15 12
 
-NB. NIST test vector
-pt =: h2d '00112233445566778899aabbccddeeff' 
-key =: i.16
-assert(pt aes128 key) = h2d '69c4e0d86a7b0430d8cdb78070b4c55a'
-
+NB. NIST test vectors
+pt =. h2d '00112233445566778899aabbccddeeff'
+key =. i.16
+res =. h2d '69c4e0d86a7b0430d8cdb78070b4c55a'
+assert(pt aes128 key) = res
+assert(res aes128d key) = pt
