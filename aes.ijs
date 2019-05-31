@@ -1,10 +1,10 @@
 load 'utils.ijs'
 
 NB. 8-bit <<<
-rotl8 =. (255) 17 b. 33 b. + ] 33 b.~ 8 -~ [
+rotl8 =: (255) 17 b. 33 b. + ] 33 b.~ 8 -~ [
 
 NB. affine transformation
-affine =. 13 : 'x xor (1 rotl8 x) xor (2 rotl8 x) xor (3 rotl8 x) xor (4 rotl8 x) xor 16b63'
+affine =: 13 : 'x xor (1 rotl8 x) xor (2 rotl8 x) xor (3 rotl8 x) xor (4 rotl8 x) xor 16b63'
 
 NB. function ab = poly_mult (a, b, mod_pol)
 NB.  ab = 0;
@@ -38,11 +38,11 @@ NB. 3 pm^:(i.15) 1
 NB. 3x => 1  3  5  f 11 33 55 ff 1a 2e 72 96 a1 f8 13 ..
 NB. 16bf6 pm^:(i.15) 1
 NB. 3% => 1 f6 52 c7 b4 6c 24 1c fd a2 97 84 7c dd 4b ..
-SBOX =. 99, (affine 246 pm^:(i.255) 1) /: (3 pm^:(i.255) 1)
-INVSBOX =. SBOX i. i.256
+SBOX =: 99, (affine 246 pm^:(i.255) 1) /: (3 pm^:(i.255) 1)
+INVSBOX =: SBOX i. i.256
 
 NB. Round constant matrix
-RCON =. ,. 4 ({."0) 10 1 $ 2 pm^:(i. 10) 1
+RCON =: ,. 4 ({."0) 10 1 $ 2 pm^:(i. 10) 1
 
 NB. Left-rotate 4 bytes
 rotw =. (/:"1) & 3 0 1 2
@@ -57,7 +57,7 @@ NB. Generate key schedule (AES 128)
     NB. get the final set of rows
     rs =. {: @: h @: (4 4 & $)
     NB. finally, break into groups of four and pivot col-wise
-ksched =. (13 : '(|:"2) 11 4 $ rs x') f.
+ksched =: (13 : '(|:"2) 11 4 $ rs x') f.
 
 NB. Mix columns
 POLYM =. 4 4 $ 2 3 1 1 1 2 3 1 1 1 2 3 3 1 1 2
@@ -88,7 +88,7 @@ NB. x aes128d y -- decrypt 16 bytes of x with 16 byte key y
     NB. round of: shift rows, sub bytes, xor key sched, mix cols
     invround =. INVPOLYM & mixcols @: |: @: (22 b.)  INVSBOX {~ invshiftrows
     NB. final round omits mixcols
-    decipher =. 13 : ', |: (0{y) xor INVSBOX {~ invshiftrows invround/(((1+i.9){y), ((10{y) 22 b. initstate x))'
+    decipher =. 13 : ', |: (0{y) 22 b. INVSBOX {~ invshiftrows invround/(((1+i.9){y), ((10{y) 22 b. initstate x))'
 aes128d =: (decipher ksched) f.
 
 
