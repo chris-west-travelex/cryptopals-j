@@ -92,9 +92,9 @@ NB. x aes128d y -- decrypt 16 bytes of x with 16 byte key y
 aes128d =: (decipher ksched) f.
 
 
-NB. ECB -- this takes and returns strings because it makes the output
-NB.        slightly more sane
-aes128ecbd =: 13 : ', d2c (_16[\x) aes128d"1 1 c2d y'
+NB. ECB -- this returns a string because it makes the output
+NB.        slightly more sane. decrypt x with key y
+aes128ecbd =: 13 : ', d2c (_16[\x) aes128d"1 1 y'
 
 
 NB. ---- TEST HELPERS ----
