@@ -1,7 +1,5 @@
 load 'utils.ijs'
-
-NB. yup
-pkcs7 =: 13 : 'x {.!.(x - # y) y'
+load 'pkcs7.ijs'
 
 
 NB. ---- TESTS ----
