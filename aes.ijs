@@ -92,9 +92,35 @@ NB. x aes128d y -- decrypt 16 bytes of x with 16 byte key y
 aes128d =: (decipher ksched) f.
 
 
-NB. ECB -- this returns a string because it makes the output
-NB.        slightly more sane. decrypt x with key y
-aes128ecbd =: 13 : ', d2c (_16[\x) aes128d"1 1 y'
+NB. ECB -- decrypt bytes x with key y; return bytes
+aes128ecbd =: 13 : ', (_16[\x) aes128d"1 1 y'
+NB.        encrypt bytes x with key y; return bytes
+aes128ecb =: 13 : ', y aes128~"1 1 (_16[\ x)'
+
+
+NB. CBC -- decrypt x with boxed key, iv; return bytes
+    NB. key; iv
+    key =. {. @: >
+    iv =. {: @: >
+    NB. decipher each block, prior to xor
+    ecb =. 13 : 'x aes128ecbd key y'
+    NB. build blocks to xor ecb with; concat iv with almost all cipher
+    cbc =. 13 : '(iv y), _16 }. x'
+aes128cbcd =: (ecb (22 b.) cbc) f.
+
+NB.        encrypt x with boxed key, iv; return bytes
+    NB. unbox plaintext and ciphertext
+    pt =. > @: {.
+    ct =. > @: {:
+    NB. accumulate ct so far, plus aes128 of next 16 pt + last 16 ct
+    acc =. 13 : '(ct y), x aes128~ (16 {. pt y) (22 b.) (_16 {. ct y)'
+    NB. compose args for recursion: remaining pt; accumulated ct
+    next =. ( 16 }. [: pt ]) ; acc
+    NB. any pt remaining?
+    done =. 16 < [: # @: pt ]
+    NB. recurse through pt, generating ct until the pt runs out
+    gen =. acc`([ $: next) @. ([: done ])
+aes128cbc =: (13 : '16 }. (> {. y) gen (x ; (> {: y))') f.
 
 
 NB. ---- TEST HELPERS ----
@@ -167,3 +193,12 @@ key =. i.16
 res =. h2d '69c4e0d86a7b0430d8cdb78070b4c55a'
 assert(pt aes128 key) = res
 assert(res aes128d key) = pt
+
+datecb =. 9 18 48 170 222 62 179 48 219 170 67 88 248 141 42 108 55 183 45 12 244 194 44 52 74 236 65 66 208 12 229 48
+out =. c2d 'I''m back and I''m ringin'' the bel'
+assert(datecb aes128ecbd c2d 'YELLOW SUBMARINE') = out
+assert(out aes128ecb c2d 'YELLOW SUBMARINE') = datecb
+
+datcbc =. 9 18 48 170 222 62 179 48 219 170 67 88 248 141 42 108 213 207 131 85 203 104 35 57 122 212 57 6 223 67 68 85
+assert(datcbc aes128cbcd (c2d 'YELLOW SUBMARINE'); (16 # 0)) = out
+
