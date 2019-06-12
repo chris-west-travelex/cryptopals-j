@@ -97,7 +97,6 @@ aes128ecbd =: 13 : ', (_16[\x) aes128d"1 1 y'
 NB.        encrypt bytes x with key y; return bytes
 aes128ecb =: 13 : ', y aes128~"1 1 (_16[\ x)'
 
-
 NB. CBC -- decrypt x with boxed key, iv; return bytes
     NB. key; iv
     key =. {. @: >
@@ -109,6 +108,7 @@ NB. CBC -- decrypt x with boxed key, iv; return bytes
 aes128cbcd =: (ecb (22 b.) cbc) f.
 
 NB.        encrypt x with boxed key, iv; return bytes
+NB.        THIS IMPLEMENTATION IS RECURSIVE AND DOESN'T WORK WITH LARGE X!!
     NB. unbox plaintext and ciphertext
     pt =. > @: {.
     ct =. > @: {:
@@ -119,7 +119,8 @@ NB.        encrypt x with boxed key, iv; return bytes
     NB. any pt remaining?
     done =. 16 < [: # @: pt ]
     NB. recurse through pt, generating ct until the pt runs out
-    gen =. acc`([ $: next) @. ([: done ])
+    NB. gen_recursive =. acc`([ $: next) @. ([: done ])
+    gen =. gen =. [ acc ( next )^:( [: done ] )^:_
 aes128cbc =: (13 : '16 }. (> {. y) gen (x ; (> {: y))') f.
 
 
@@ -201,4 +202,5 @@ assert(out aes128ecb c2d 'YELLOW SUBMARINE') = datecb
 
 datcbc =. 9 18 48 170 222 62 179 48 219 170 67 88 248 141 42 108 213 207 131 85 203 104 35 57 122 212 57 6 223 67 68 85
 assert(datcbc aes128cbcd (c2d 'YELLOW SUBMARINE'); (16 # 0)) = out
+assert(out aes128cbc (c2d 'YELLOW SUBMARINE'); (16 # 0)) = datcbc
 
