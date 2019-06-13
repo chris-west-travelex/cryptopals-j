@@ -1,4 +1,5 @@
 load 'utils.ijs'
+load 'pkcs7.ijs'
 
 NB. 8-bit <<<
 rotl8 =: (255) 17 b. 33 b. + ] 33 b.~ 8 -~ [
@@ -95,7 +96,7 @@ aes128d =: (decipher ksched) f.
 NB. ECB -- decrypt bytes x with key y; return bytes
 aes128ecbd =: 13 : ', (_16[\x) aes128d"1 1 y'
 NB.        encrypt bytes x with key y; return bytes
-aes128ecb =: 13 : ', y aes128~"1 1 (_16[\ x)'
+aes128ecb =: 13 : ', y aes128~"1 1 (_16[\ 16 pkcs7 x)'
 
 NB. CBC -- decrypt x with boxed key, iv; return bytes
     NB. key; iv
@@ -108,7 +109,6 @@ NB. CBC -- decrypt x with boxed key, iv; return bytes
 aes128cbcd =: (ecb (22 b.) cbc) f.
 
 NB.        encrypt x with boxed key, iv; return bytes
-NB.        THIS IMPLEMENTATION IS RECURSIVE AND DOESN'T WORK WITH LARGE X!!
     NB. unbox plaintext and ciphertext
     pt =. > @: {.
     ct =. > @: {:
@@ -121,7 +121,7 @@ NB.        THIS IMPLEMENTATION IS RECURSIVE AND DOESN'T WORK WITH LARGE X!!
     NB. recurse through pt, generating ct until the pt runs out
     NB. gen_recursive =. acc`([ $: next) @. ([: done ])
     gen =. gen =. [ acc ( next )^:( [: done ] )^:_
-aes128cbc =: (13 : '16 }. (> {. y) gen (x ; (> {: y))') f.
+aes128cbc =: (13 : '16 }. (> {. y) gen ((16 pkcs7 x) ; (> {: y))') f.
 
 
 NB. ---- TEST HELPERS ----
@@ -203,4 +203,8 @@ assert(out aes128ecb c2d 'YELLOW SUBMARINE') = datecb
 datcbc =. 9 18 48 170 222 62 179 48 219 170 67 88 248 141 42 108 213 207 131 85 203 104 35 57 122 212 57 6 223 67 68 85
 assert(datcbc aes128cbcd (c2d 'YELLOW SUBMARINE'); (16 # 0)) = out
 assert(out aes128cbc (c2d 'YELLOW SUBMARINE'); (16 # 0)) = datcbc
+
+NB. test padding
+assert( ((i.33) aes128ecb key) aes128ecbd key ) = 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 15 15 15 15 15 15 15 15 15 15 15 15 15 15 15
+assert( ((i.33) aes128cbc (key; (16 # 0))) aes128cbcd (key; (16 # 0)) ) = 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 15 15 15 15 15 15 15 15 15 15 15 15 15 15 15
 
