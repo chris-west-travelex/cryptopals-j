@@ -17,27 +17,10 @@ NB. calculate blocksize
      NB. 1 : '>./ 2 ({: - {.)\ u o'
 blocksize =: 1 : '>./ 2 ({: - {.)\ ([: # u) \ (32 + i.64)'
 
-NB. algorithm to unpack one block; manual, dumb version:
-    NB. padding
-    p1 =. 15 256 $ 0
-    NB. dictionary of blocks
-    d1 =. |: (i.256) ,~ p1
-    NB. block to look for
-    t1 =. ecb_oracle (15 # 0)
-    NB. find t in d (not convinced this is stellar logic)
-    c1 =. {. I. (16 & =) +/ |: (16 & {.)"1 t1 ="1 1 ecb_oracle"1 d1
-
-    NB. iteration 2
-    p2 =. 1 }. p1 , c1
-    d2 =. |: (i.256) ,~ p2
-    t2 =. ecb_oracle (14 # 0)
-    c2 =. {. I. (16 & =) +/ |: (16 & {.)"1 t2 ="1 1 ecb_oracle"1 d2
-
-    NB. ... etc.
-
-NB. generalised version of the above
+NB. algorithm to unpack one block
+NB. TODO CONVERT TO GERUND
     NB. calculate padding length from bytes so far
-    pl =. 15 - $ ]
+    pl =. 15 - [: $ ]
 
     NB. pad x to blocksize-1 bytes
     p =. 13 : '(0 #~ pl x) , x'
@@ -53,9 +36,17 @@ NB. generalised version of the above
     NB. given x = bytes so far
     c =. 13 : 'x , I. (16 & =) +/ |: (16 {. t pl x) ="1 1 (16 & {.)"1 ecb_oracle"1 (d p x)'
 
+    NB. call c with its own output 16 times, starting with an empty array
 firstblock =: c^:16 i.0
+
+NB. hackery for second block
+pl =. 31 - [: $ ]
+c =. 13 : 'x , I. (32 & =) +/ |: (32 {. t pl x) ="1 1 (32 & {.)"1 ecb_oracle"1 (d p x)'
+secondblock =: c^:16 firstblock
+
 
 NB. ---- TESTS ----
 assert (ecb_oracle 1) = (ecb_oracle 1)
 assert (ecb_oracle is_ecb) = 1
 assert (ecb_oracle blocksize) = 16
+assert (firstblock) = 'Rollin'' in my 5.'
