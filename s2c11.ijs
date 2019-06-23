@@ -21,7 +21,7 @@ NB. ecb detector (adverb)
 NB.  ... puts 8 blocks of data into u, then
 NB.      counts unique in first six encrypted.
 NB.      if there are only two unique, it's ECB
-is_ecb =: 1 : '1 = >./ i.~ 6 16 $ u (128 # 65)'
+is_ecb =: 1 : '1 >: >./ i.~ 6 16 $ u (128 # 65)'
 
 
 NB. ---- TESTS ----

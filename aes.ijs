@@ -120,7 +120,7 @@ NB.        encrypt x with boxed key, iv; return bytes
     done =. 16 < [: # @: pt ]
     NB. recurse through pt, generating ct until the pt runs out
     NB. gen_recursive =. acc`([ $: next) @. ([: done ])
-    gen =. gen =. [ acc ( next )^:( [: done ] )^:_
+    gen =. [ acc ( next )^:( [: done ] )^:_
 aes128cbc =: (13 : '16 }. (> {. y) gen ((16 pkcs7 x) ; (> {: y))') f.
 
 
