@@ -19,8 +19,12 @@ blocksize =: 1 : '>./ 2 ({: - {.)\ ([: # u) \ (32 + i.64)'
 
 NB. algorithm to unpack one block
 NB. TODO CONVERT TO GERUND
+NB.      (so that we can apply this to any function instead of wiring to ecb_oracle)
+    NB. len(bytes so far) + 1, rounded up to block size
+    b =. 16 * [: >. 16 %~ 1 + [: # [
+
     NB. calculate padding length from bytes so far
-    pl =. 15 - [: $ ]
+    pl =. (_1 + [: b [) - [: $ [
 
     NB. pad x to blocksize-1 bytes
     p =. 13 : '(0 #~ pl x) , x'
@@ -34,19 +38,17 @@ NB. TODO CONVERT TO GERUND
 
     NB. return index of t in ecb_oracle(d), concatenated with bytes so far ...
     NB. given x = bytes so far
-    c =. 13 : 'x , I. (16 & =) +/ |: (16 {. t pl x) ="1 1 (16 & {.)"1 ecb_oracle"1 (d p x)'
+    c =. 13 : 'x , I. (b x) ="0 1 +/ |: ((b x) {. t pl x) ="1 1 (b x) {."0 1 ecb_oracle"1 (d p x)'
 
-    NB. call c with its own output 16 times, starting with an empty array
-firstblock =: c^:16 i.0
+    NB. call c with its own output n times, starting with an empty array
+get_plaintext =: 3 : 'c^:y i.0'
 
-NB. hackery for second block
-pl =. 31 - [: $ ]
-c =. 13 : 'x , I. (32 & =) +/ |: (32 {. t pl x) ="1 1 (32 & {.)"1 ecb_oracle"1 (d p x)'
-secondblock =: c^:16 firstblock
 
 
 NB. ---- TESTS ----
 assert (ecb_oracle 1) = (ecb_oracle 1)
 assert (ecb_oracle is_ecb) = 1
 assert (ecb_oracle blocksize) = 16
-assert (firstblock) = 'Rollin'' in my 5.'
+
+NB. this is stupidly slow due to the amount of aes128 needed
+assert (get_plaintext 16) = c2d 'Rollin'' in my 5.'
