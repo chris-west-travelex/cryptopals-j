@@ -41,7 +41,7 @@ NB.      (so that we can apply this to any function instead of wiring to ecb_ora
     c =. 13 : 'x , I. (b x) ="0 1 +/ |: ((b x) {. t pl x) ="1 1 (b x) {."0 1 ecb_oracle"1 (d p x)'
 
     NB. call c with its own output n times, starting with an empty array
-get_plaintext =: 3 : 'c^:y i.0'
+get_plaintext =: 13 : 'c^:y i.0'
 
 
 
