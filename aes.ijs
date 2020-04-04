@@ -94,7 +94,7 @@ aes128d =: (decipher ksched) f.
 
 
 NB. ECB -- decrypt bytes x with key y; return bytes
-aes128ecbd =: 13 : ', (_16[\x) aes128d"1 1 y'
+aes128ecbd =: 13 : 'pkcs7d , (_16[\x) aes128d"1 1 y'
 NB.        encrypt bytes x with key y; return bytes
 aes128ecb =: 13 : ', y aes128~"1 1 (_16[\ 16 pkcs7 x)'
 
@@ -103,6 +103,7 @@ NB. CBC -- decrypt x with boxed key, iv; return bytes
     key =. {. @: >
     iv =. {: @: >
     NB. decipher each block, prior to xor
+    NB. TODO sort out what happens with PKCS7 padding here !
     ecb =. 13 : 'x aes128ecbd key y'
     NB. build blocks to xor ecb with; concat iv with almost all cipher
     cbc =. 13 : '(iv y), _16 }. x'
@@ -205,6 +206,5 @@ assert(datcbc aes128cbcd (c2d 'YELLOW SUBMARINE'); (16 # 0)) = out
 assert(out aes128cbc (c2d 'YELLOW SUBMARINE'); (16 # 0)) = datcbc
 
 NB. test padding
-assert( ((i.33) aes128ecb key) aes128ecbd key ) = 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 15 15 15 15 15 15 15 15 15 15 15 15 15 15 15
+assert( ((i.33) aes128ecb key) aes128ecbd key ) = 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32
 assert( ((i.33) aes128cbc (key; (16 # 0))) aes128cbcd (key; (16 # 0)) ) = 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 15 15 15 15 15 15 15 15 15 15 15 15 15 15 15
-
