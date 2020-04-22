@@ -18,7 +18,7 @@ pkcs7_valid =: [: */cmp f.
 NB. strip pkcs7
     strip =. [ }.~ [: - [: {: [
     NB. if it's valid, strip the bytes
-pkcs7d =: strip ^: pkcs7_valid
+pkcs7d =: strip ^: pkcs7_valid f.
 
 NB. ---- TESTS ----
 assert (16 pkcs7 0 1 2 3) = 0 1 2 3 12 12 12 12 12 12 12 12 12 12 12 12
